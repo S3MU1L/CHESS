@@ -86,19 +86,17 @@ def move_click(mouse_pos, possible_moves):
 
 def analyze_state(grid, turn):
     #find the king of responding color in the grid
-    kingx, kingy = -1, -1
-    for y in range(8):
-        for x in range(8):
-            if grid[y][x][0] == 5 and grid[y][x][1] == turn:
-                kingx, kingy = x, y
-                break
-    all = possible_king(kingx, kingy, grid, False)
+    kingx, kingy = find_king(grid, turn)
+    th = calculate_threats(grid, turn)
     pos = possible_king(kingx, kingy, grid, True)
-    #TODO CHECK
+    
+    
     if len(pos) == 0:
         print("Checkmate !")
     elif len(pos) == 1 and pos == [kingy, kingx]:
         print("Mate !")
+    elif [kingy, kingx] in th:
+        print("Check !")
     else:
         print("ok")
         
@@ -106,13 +104,10 @@ def draw(win, grid, highlighted, possible_moves, turn):
     draw_board(win, highlighted)
     if possible_moves != []:
         draw_possible(win, possible_moves, grid, turn)
+    
     draw_grid(win, grid)
     pygame.display.update()
 
-def draw_threats(win, threats):
-    for t in threats:
-        if t != []:
-            pygame.draw.rect(win, RED, (t[1]*SIDE, t[0] * SIDE, SIDE, SIDE))
 
 while run:
     for event in pygame.event.get():
@@ -123,11 +118,8 @@ while run:
             temp = check_click(turn, pygame.mouse.get_pos(), grid)
             if temp != [-1,-1]:
                 highlighted = temp
-                if grid[temp[1]][temp[0]][0] == 5:
-                    safe_moves = calculate_possible(highlighted, grid)
-                else:
-                    possible_moves = calculate_possible(highlighted, grid)
-                    safe_moves = check_valid_moves(highlighted, possible_moves, turn, grid)
+                possible_moves = calculate_possible(highlighted, grid)
+                safe_moves = check_valid_moves(highlighted, possible_moves, turn, grid)
             else:
                 click_where = pygame.mouse.get_pos()
                 t = move_click(click_where, safe_moves)
@@ -141,6 +133,4 @@ while run:
         
     draw(window, grid, highlighted, safe_moves, turn)
     clock.tick(FPS)
-
-
 
