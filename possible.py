@@ -1,11 +1,5 @@
 def calculate_threats(grid, turn):
-    kingy, kingx = -1, -1
-    for y in range(8):
-        for x in range(8):
-            if grid[y][x][1] == turn:
-                if grid[y][x][0] == 5:
-                    kingy, kingx = y, x
-                    break
+    kingx, kingy = find_king(grid, turn)
     all = [[]]
     for y in range(8):
         for x in range(8):
@@ -19,8 +13,6 @@ def calculate_threats(grid, turn):
                     all += possible_pawn(x, y, grid, True)
                 else:
                     all += calculate_possible([x, y], grid)
-    # print("ALL")
-    # print(all)
     return all
 
 def calculate_possible(highlighted, grid):
@@ -249,33 +241,33 @@ def possible_king(x, y, grid, reduced):
                 if grid[y-1][x+i][1] != turn:
                     res.append([y - 1, x + i])
     if reduced:
-        return check_valid_moves([kingy, kingx], res, turn, grid)
-    # print("ALL POSSIBLE KING MOVES")
-    # print("king color ", grid[kingy][kingx][1])
-    # print(res)
+        return check_valid_moves([kingx, kingy], res, turn, grid)
     return res
 
 def check_valid_moves(highlighted, positions, turn, grid):
     res = [[]]
-    for y in range(8):
-        for x in range(8):
-            if grid[y][x][1] == turn:
-                if grid[y][x][0] == 5:
-                    kingy, kingx = y, x
-                    break
-    
-    x_piece = highlighted[0]
+    kingx, kingy = find_king(grid, turn)
     y_piece = highlighted[1]
+    x_piece = highlighted[0]
     for pos in positions:
             if pos != []:
                 temp = grid[pos[0]][pos[1]]
                 grid[pos[0]][pos[1]], grid[y_piece][x_piece] = grid[y_piece][x_piece], [-1, -1]
-                if x_piece == kingx and y_piece == kingy:
+                if [kingy, kingx] == [y_piece, x_piece]:
                     if pos not in calculate_threats(grid, turn):
                         res.append(pos)
-                else: 
+                else:
                     if [kingy, kingx] not in calculate_threats(grid, turn):
                         res.append(pos)
                 grid[y_piece][x_piece], grid[pos[0]][pos[1]] = grid[pos[0]][pos[1]], temp
-    
     return res
+
+def find_king(grid, turn):
+    kingx, kingy = -1, -1
+    for y in range(8):
+        for x in range(8):
+            if grid[y][x][0] == 5 and grid[y][x][1] == turn:
+                kingx = x
+                kingy = y
+                break
+    return kingx, kingy
