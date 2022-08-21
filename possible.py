@@ -1,4 +1,4 @@
-def calculate_threats(grid, turn, w_king_moved, b_king_moved, en_pessant_pawn):
+def calculate_threats(grid, turn, w_king_moved, b_king_moved, en_passant_pawn, state):
     kingx, kingy = find_king(grid, turn)
     all = [[]]
     for y in range(8):
@@ -8,19 +8,19 @@ def calculate_threats(grid, turn, w_king_moved, b_king_moved, en_pessant_pawn):
                     all.append([y, x])
             if grid[y][x][1] != -1 and grid[y][x][1] != turn:
                 if grid[y][x][0] == 5:
-                    all += possible_king(x, y, grid, False, w_king_moved, b_king_moved, en_pessant_pawn)
+                    all += possible_king(x, y, grid, False, w_king_moved, b_king_moved, en_passant_pawn, state)
                 elif grid[y][x][0] == 0:
-                    all += possible_pawn(x, y, grid, True, en_pessant_pawn)
+                    all += possible_pawn(x, y, grid, True, en_passant_pawn)
                 else:
-                    all += calculate_possible([x, y], grid, w_king_moved, b_king_moved, en_pessant_pawn)
+                    all += calculate_possible([x, y], grid, w_king_moved, b_king_moved, en_passant_pawn, state)
     return all
 
-def calculate_possible(highlighted, grid, w_king_moved, b_king_moved, en_pessant_pawn):
+def calculate_possible(highlighted, grid, w_king_moved, b_king_moved, en_passant_pawn, state):
     x = highlighted[0]
     y = highlighted[1]
     piece = grid[y][x][0]
     if piece == 0:
-        return possible_pawn(x, y, grid, False, en_pessant_pawn)
+        return possible_pawn(x, y, grid, False, en_passant_pawn)
     elif piece == 1:
         return possible_knight(x, y, grid)
     elif piece == 2:
@@ -30,10 +30,10 @@ def calculate_possible(highlighted, grid, w_king_moved, b_king_moved, en_pessant
     elif piece == 4:
         return possible_queen(x, y, grid)  
     
-    return possible_king(x, y, grid, True, w_king_moved, b_king_moved)
+    return possible_king(x, y, grid, True, w_king_moved, b_king_moved, en_passant_pawn, state)
     
     
-def possible_pawn(x, y, grid, reduced, en_pessant_pawn):
+def possible_pawn(x, y, grid, reduced, en_passant_pawn):
     res = []
     #white pawns only move up
     turn = grid[y][x][1]
@@ -52,12 +52,12 @@ def possible_pawn(x, y, grid, reduced, en_pessant_pawn):
             #EN PESSANT FOR WHITE
             #if the pawn is to the left_side
             if x - 1 >= 0 and y - 1 >= 0:
-                if [y, x - 1] == en_pessant_pawn:
+                if [y, x - 1] == en_passant_pawn:
                     if grid[y-1][x-1] == [-1, -1]:
                         res.append([y-1, x-1]) 
             #if the pawn is to the right side
             if x + 1 <= 7 and y - 1 >= 0:
-                if [y, x + 1] == en_pessant_pawn:
+                if [y, x + 1] == en_passant_pawn:
                     if grid[y-1][x+1] == [-1, -1]:
                         res.append([y-1, x+1])
                         
@@ -93,13 +93,13 @@ def possible_pawn(x, y, grid, reduced, en_pessant_pawn):
             #EN PESSANT FOR BLACK
             #if the pawn is to the left_side
             if x - 1 >= 0 and y + 1 <= 7:
-                if [y, x - 1] == en_pessant_pawn:
+                if [y, x - 1] == en_passant_pawn:
                     if grid[y+1][x-1] == [-1, -1]:
                         res.append([y+1, x-1])
                          
             #if the pawn is to the right side
             if x + 1 <= 7 and y + 1 <= 7:
-                if [y, x + 1] == en_pessant_pawn:
+                if [y, x + 1] == en_passant_pawn:
                     if grid[y+1][x+1] == [-1, -1]:
                         res.append([y+1, x+1])
             
@@ -242,8 +242,8 @@ def possible_queen(x, y, grid):
     res = possible_bishop(x, y, grid) + possible_rook(x, y, grid)
     return res
 
-def possible_king(x, y, grid, reduced, w_king_moved, b_king_moved, en_pessant_pawn):
-    #TODO IMPLEMENT CASTLING
+def possible_king(x, y, grid, reduced, w_king_moved, b_king_moved, en_passant_pawn, state):
+    
     kingx = x
     kingy = y
     turn = grid[kingy][kingx][1]
@@ -265,11 +265,11 @@ def possible_king(x, y, grid, reduced, w_king_moved, b_king_moved, en_pessant_pa
                 if grid[y-1][x+i][1] != turn:
                     res.append([y - 1, x + i])
     if reduced:
-        return check_valid_moves([kingx, kingy], res, turn, grid, w_king_moved, b_king_moved, en_pessant_pawn)
+        return check_valid_moves([kingx, kingy], res, turn, grid, w_king_moved, b_king_moved, en_passant_pawn, state)
     
     return res
 
-def check_valid_moves(highlighted, positions, turn, grid, w_king_moved, b_king_moved, en_pessant_pawn):
+def check_valid_moves(highlighted, positions, turn, grid, w_king_moved, b_king_moved, en_passant_pawn, state):
     res = [[]]
     kingx, kingy = find_king(grid, turn)
     y_piece = highlighted[1]
@@ -279,10 +279,10 @@ def check_valid_moves(highlighted, positions, turn, grid, w_king_moved, b_king_m
                 temp = grid[pos[0]][pos[1]]
                 grid[pos[0]][pos[1]], grid[y_piece][x_piece] = grid[y_piece][x_piece], [-1, -1]
                 if [kingy, kingx] == [y_piece, x_piece]:
-                    if pos not in calculate_threats(grid, turn, w_king_moved, b_king_moved, en_pessant_pawn):
+                    if pos not in calculate_threats(grid, turn, w_king_moved, b_king_moved, en_passant_pawn, state):
                         res.append(pos)
                 else:
-                    if [kingy, kingx] not in calculate_threats(grid, turn, w_king_moved, b_king_moved, en_pessant_pawn):
+                    if [kingy, kingx] not in calculate_threats(grid, turn, w_king_moved, b_king_moved, en_passant_pawn, state):
                         res.append(pos)
                 grid[y_piece][x_piece], grid[pos[0]][pos[1]] = grid[pos[0]][pos[1]], temp
     return res
