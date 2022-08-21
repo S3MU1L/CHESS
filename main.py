@@ -11,6 +11,7 @@ clock = pygame.time.Clock()
 turn = 0
 highlighted = [-1,-1]
 possible_moves = []
+safe_moves = []
 #the pieces are numbered accordingly : pawn : 0, knight : 1, bishop : 2, rook : 3, queen : 4, king : 5
 #if nothing is placed on the position, both arguments will be -1
 #the grid will be represented by 2D array of 2 element lists, the first value in the list means what piece is on the position
@@ -55,16 +56,15 @@ def draw_grid(win, grid):
                     image_list = BLACK_IMAGES
                 win.blit(image_list[grid[y][x][0]], (x * SIDE, y * SIDE))
 
-def draw_possible(win, possible_moves, grid):
-    
-    if len(possible_moves) > 0:
-        for pos in possible_moves:
+def draw_possible(win, possible_moves, grid, turn):
+    for pos in possible_moves:
+        if pos != []:
             y = pos[0]
             x = pos[1]
             if grid[y][x] == [-1, -1]:
                 pygame.draw.circle(win, HIGHLIGHT, (x * SIDE + SIDE//2, y * SIDE + SIDE//2), R)
 
-            else:
+            elif grid[y][x] != [-1, -1] and grid[y][x][1] != turn:
                 pygame.draw.rect(win, RED, (x*SIDE, y * SIDE, SIDE, SIDE))
 
 
@@ -92,24 +92,27 @@ def analyze_state(grid, turn):
             if grid[y][x][0] == 5 and grid[y][x][1] == turn:
                 kingx, kingy = x, y
                 break
-    result = possible_king(kingx, kingy, grid, turn)
-    good = result[0]
-    print(good)
-    threatened = result[1]
-    print(threatened)
-    if len(good) == 0 and threatened:
-        print("Checkmate")
-    elif len(good) != 0 and threatened:
-        print("Mate")
+    all = possible_king(kingx, kingy, grid, False)
+    pos = possible_king(kingx, kingy, grid, True)
+    #TODO CHECK
+    if len(pos) == 0:
+        print("Checkmate !")
+    elif len(pos) == 1 and pos == [kingy, kingx]:
+        print("Mate !")
     else:
         print("ok")
         
-def draw(win, grid, highlighted, possible_moves):
+def draw(win, grid, highlighted, possible_moves, turn):
     draw_board(win, highlighted)
     if possible_moves != []:
-        draw_possible(win, possible_moves, grid)
+        draw_possible(win, possible_moves, grid, turn)
     draw_grid(win, grid)
     pygame.display.update()
+
+def draw_threats(win, threats):
+    for t in threats:
+        if t != []:
+            pygame.draw.rect(win, RED, (t[1]*SIDE, t[0] * SIDE, SIDE, SIDE))
 
 while run:
     for event in pygame.event.get():
@@ -120,17 +123,24 @@ while run:
             temp = check_click(turn, pygame.mouse.get_pos(), grid)
             if temp != [-1,-1]:
                 highlighted = temp
-                possible_moves = calculate_possible(highlighted, grid)
+                if grid[temp[1]][temp[0]][0] == 5:
+                    safe_moves = calculate_possible(highlighted, grid)
+                else:
+                    possible_moves = calculate_possible(highlighted, grid)
+                    safe_moves = check_valid_moves(highlighted, possible_moves, turn, grid)
             else:
                 click_where = pygame.mouse.get_pos()
-                t = move_click(click_where, possible_moves)
+                t = move_click(click_where, safe_moves)
                 if t != [-1, -1]:
                     grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                     turn = (turn + 1) % 2
                     highlighted = [-1, -1]
                     possible_moves = []
+                    safe_moves = []
                     analyze_state(grid, turn)
         
-    draw(window, grid, highlighted, possible_moves)
+    draw(window, grid, highlighted, safe_moves, turn)
     clock.tick(FPS)
+
+
 
