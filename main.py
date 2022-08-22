@@ -1,5 +1,4 @@
 #AUTHOR : Samuel Malec
-from re import L
 import pygame
 from constants import *
 from possible import *
