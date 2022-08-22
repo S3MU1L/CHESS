@@ -14,7 +14,7 @@ def initialize():
     highlighted = [-1,-1]
     possible_moves = []
     safe_moves = []
-    state = -1
+    state = -1   
     #we will represent castling by states
     #0 means that the king, both rooks haven't moved yet
     #1 means only the rook, that is on the left side of the board (rook [0,0] or rook [7,0]) has moved
@@ -235,19 +235,23 @@ def game_loop(window, run, clock, turn, highlighted, possible_moves,
                                         grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                         grid[7][3], grid[7][0] = grid[7][0], grid[7][3]
                                     
-                                    if t == [7, 6]:
+                                    elif t == [7, 6]:
                                         grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                         grid[7][7], grid[7][5] = grid[7][5], grid[7][7]
-                                    
+                                    else:
+                                        grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                 if turn == 1:
                                     if t == [0, 2]:
                                         grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                         grid[0][3], grid[0][0] = grid[0][0], grid[0][3]
                                     
-                                    if t == [0, 6]:
+                                    elif t == [0, 6]:
                                         grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                         grid[0][7], grid[0][5] = grid[0][5], grid[0][7]   
-                        
+                                    
+                                    else:
+                                        grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
+                                        
                             #anytime we move the king we cannot castle anytime in the future
                             if turn == 0:
                                 w_castlable_state = 3
@@ -259,6 +263,8 @@ def game_loop(window, run, clock, turn, highlighted, possible_moves,
                             en_passant_pawn = [-1, -1]
                             
                         #TODO here we have to check if there are any pawns on the 0 or the 7 row,
+                        # for y in range(8):
+                        #     for x in range(8):
                         #if there are then we need to ask the player what piece does he want to change the pawn into
                         turn = (turn + 1) % 2
                         highlighted = [-1, -1]
@@ -270,7 +276,7 @@ def game_loop(window, run, clock, turn, highlighted, possible_moves,
         clock.tick(FPS)
 
 
-
-
 if __name__ == '__main__':
     initialize()
+
+
