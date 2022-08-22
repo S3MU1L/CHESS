@@ -1,8 +1,10 @@
 #AUTHOR : Samuel Malec
+from re import L
 import pygame
 from constants import *
 from possible import *
 import menu
+# from option_window import OptionWindow
 pygame.init()
 
 def initialize():
@@ -14,7 +16,11 @@ def initialize():
     highlighted = [-1,-1]
     possible_moves = []
     safe_moves = []
-    state = -1   
+    state = -1
+    transformation = False
+    trans_pawn = [-1, -1]
+    click = -1
+    pieces = [4,3,2,1]
     #we will represent castling by states
     #0 means that the king, both rooks haven't moved yet
     #1 means only the rook, that is on the left side of the board (rook [0,0] or rook [7,0]) has moved
@@ -40,7 +46,7 @@ def initialize():
             ]
     game_loop(window, run, clock, turn, highlighted, possible_moves, 
               safe_moves, state, grid, w_castlable_state, b_castlable_state,
-              en_passant_pawn)
+              en_passant_pawn, transformation, trans_pawn, click, pieces)
 
 def draw_board(win, highlighted):
     black = True
@@ -130,23 +136,33 @@ def analyze_state(grid, turn, w_castlable_state, b_castlable_state, en_passant_p
         return 0
     
     return -1
-    
-def draw(win, grid, highlighted, possible_moves, turn, state):
+
+def draw_transformation(win):
+    text = "Click on pawn to change the piece"
+    text2 = "Press enter to play"
+    text_surface = menu_font.render(text, 1, FONT_COLOR)
+    text_surface2 = menu_font.render(text2, 1, FONT_COLOR)
+    win.blit(text_surface, (WIDTH//2 - text_surface.get_width()//2, 100))
+    win.blit(text_surface2, (WIDTH//2 - text_surface2.get_width()//2, 200))
+
+
+def draw(win, grid, highlighted, possible_moves, turn, state, transformation):
     draw_board(win, highlighted)
     if state == 1:
         draw_mate(win)
-    if state == 2:
+    elif state == 2:
         draw_winning(win, (turn + 1)%2)
-    if possible_moves != []:
+    elif possible_moves != []:
         draw_possible(win, possible_moves, grid, turn)
-    
     draw_grid(win, grid)
+    if transformation:
+        draw_transformation(win)
+    
     pygame.display.update()
 
 def game_loop(window, run, clock, turn, highlighted, possible_moves, 
               safe_moves, state, grid, w_castlable_state, b_castlable_state,
-              en_passant_pawn):
-    
+              en_passant_pawn, transformation, trans_pawn, click, pieces):
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -158,7 +174,17 @@ def game_loop(window, run, clock, turn, highlighted, possible_moves,
                     pygame.quit()
                     initialize()
                     break
-            if event.type == pygame.MOUSEBUTTONDOWN and state < 1:
+                if event.key == pygame.K_RETURN and transformation:
+                    transformation = False
+                    trans_piece = [-1, -1]
+                    click = -1
+                    turn = (turn + 1) % 2
+                    highlighted = [-1, -1]
+                    possible_moves = []
+                    safe_moves = []
+                    state = analyze_state(grid, turn,  w_castlable_state, b_castlable_state, en_passant_pawn, state)
+
+            if event.type == pygame.MOUSEBUTTONDOWN and state < 1 and not transformation:
                 temp = check_click(turn, pygame.mouse.get_pos(), grid)
                 if temp != [-1,-1]:
                     highlighted = temp
@@ -266,20 +292,39 @@ def game_loop(window, run, clock, turn, highlighted, possible_moves,
                             en_passant_pawn = [-1, -1]
                             
                         #TODO here we have to check if there are any pawns on the 0 or the 7 row,
-                        # for y in range(8):
-                        #     for x in range(8):
+                        for y in [0,7]:
+                            for x in range(8):
+                                if grid[y][x][0] == 0:
+                                    transformation = True
+                                    trans_pawn = [y, x]
+                                    click = -1
+                                    turn -= 1
+
                         #if there are then we need to ask the player what piece does he want to change the pawn into
                         turn = (turn + 1) % 2
                         highlighted = [-1, -1]
                         possible_moves = []
                         safe_moves = []
                         state = analyze_state(grid, turn,  w_castlable_state, b_castlable_state, en_passant_pawn, state)
-                        
-        draw(window, grid, highlighted, safe_moves, turn, state)
+            if event.type == pygame.MOUSEBUTTONDOWN and state < 1 and transformation:
+                print("yes")
+                print(turn)
+                t = check_click(turn, pygame.mouse.get_pos(), grid)
+                print(t)
+                if t != [-1,-1]:
+                    print("ofc")
+                    if [t[1], t[0]] == [trans_pawn[0], trans_pawn[1]]:
+                        click += 1
+                        new_piece = pieces[click%4]
+                        grid[trans_pawn[0]][trans_pawn[1]] = [new_piece, turn]
+
+
+                
+
+        draw(window, grid, highlighted, safe_moves, turn, state, transformation)
         clock.tick(FPS)
 
 
 if __name__ == '__main__':
     initialize()
-
 
