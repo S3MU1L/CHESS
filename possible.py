@@ -1,4 +1,4 @@
-def calculate_threats(grid, turn, w_king_moved, b_king_moved, en_passant_pawn, state):
+def calculate_threats(grid, turn, w_castlable_state, b_castlable_state, en_passant_pawn, state):
     kingx, kingy = find_king(grid, turn)
     all = [[]]
     for y in range(8):
@@ -8,14 +8,14 @@ def calculate_threats(grid, turn, w_king_moved, b_king_moved, en_passant_pawn, s
                     all.append([y, x])
             if grid[y][x][1] != -1 and grid[y][x][1] != turn:
                 if grid[y][x][0] == 5:
-                    all += possible_king(x, y, grid, False, w_king_moved, b_king_moved, en_passant_pawn, state)
+                    all += possible_king(x, y, grid, False, w_castlable_state, b_castlable_state, en_passant_pawn, state)
                 elif grid[y][x][0] == 0:
                     all += possible_pawn(x, y, grid, True, en_passant_pawn)
                 else:
-                    all += calculate_possible([x, y], grid, w_king_moved, b_king_moved, en_passant_pawn, state)
+                    all += calculate_possible([x, y], grid, w_castlable_state, b_castlable_state, en_passant_pawn, state)
     return all
 
-def calculate_possible(highlighted, grid, w_king_moved, b_king_moved, en_passant_pawn, state):
+def calculate_possible(highlighted, grid, w_castlable_state, b_castlable_state, en_passant_pawn, state):
     x = highlighted[0]
     y = highlighted[1]
     piece = grid[y][x][0]
@@ -30,7 +30,7 @@ def calculate_possible(highlighted, grid, w_king_moved, b_king_moved, en_passant
     elif piece == 4:
         return possible_queen(x, y, grid)  
     
-    return possible_king(x, y, grid, True, w_king_moved, b_king_moved, en_passant_pawn, state)
+    return possible_king(x, y, grid, True, w_castlable_state, b_castlable_state, en_passant_pawn, state)
     
     
 def possible_pawn(x, y, grid, reduced, en_passant_pawn):
@@ -242,7 +242,7 @@ def possible_queen(x, y, grid):
     res = possible_bishop(x, y, grid) + possible_rook(x, y, grid)
     return res
 
-def possible_king(x, y, grid, reduced, w_king_moved, b_king_moved, en_passant_pawn, state):
+def possible_king(x, y, grid, reduced, w_castlable_state, b_castlable_state, en_passant_pawn, state):
     
     kingx = x
     kingy = y
@@ -265,11 +265,11 @@ def possible_king(x, y, grid, reduced, w_king_moved, b_king_moved, en_passant_pa
                 if grid[y-1][x+i][1] != turn:
                     res.append([y - 1, x + i])
     if reduced:
-        return check_valid_moves([kingx, kingy], res, turn, grid, w_king_moved, b_king_moved, en_passant_pawn, state)
+        return check_valid_moves([kingx, kingy], res, turn, grid, w_castlable_state, b_castlable_state, en_passant_pawn, state)
     
     return res
 
-def check_valid_moves(highlighted, positions, turn, grid, w_king_moved, b_king_moved, en_passant_pawn, state):
+def check_valid_moves(highlighted, positions, turn, grid, w_castlable_state, b_castlable_state, en_passant_pawn, state):
     res = [[]]
     kingx, kingy = find_king(grid, turn)
     y_piece = highlighted[1]
@@ -279,10 +279,10 @@ def check_valid_moves(highlighted, positions, turn, grid, w_king_moved, b_king_m
                 temp = grid[pos[0]][pos[1]]
                 grid[pos[0]][pos[1]], grid[y_piece][x_piece] = grid[y_piece][x_piece], [-1, -1]
                 if [kingy, kingx] == [y_piece, x_piece]:
-                    if pos not in calculate_threats(grid, turn, w_king_moved, b_king_moved, en_passant_pawn, state):
+                    if pos not in calculate_threats(grid, turn, w_castlable_state, b_castlable_state, en_passant_pawn, state):
                         res.append(pos)
                 else:
-                    if [kingy, kingx] not in calculate_threats(grid, turn, w_king_moved, b_king_moved, en_passant_pawn, state):
+                    if [kingy, kingx] not in calculate_threats(grid, turn, w_castlable_state, b_castlable_state, en_passant_pawn, state):
                         res.append(pos)
                 grid[y_piece][x_piece], grid[pos[0]][pos[1]] = grid[pos[0]][pos[1]], temp
     return res
@@ -296,3 +296,42 @@ def find_king(grid, turn):
                 kingy = y
                 break
     return kingx, kingy
+
+def check_castling(grid, highlighted, w_castlable_state, b_castlable_state, state, turn, en_passant_pawn):
+    
+    if state != -1:
+        return [[]]
+    
+    if turn == 0 and w_castlable_state == 3:
+        return [[]]
+    
+    if turn == 1 and b_castlable_state == 3:
+        return [[]]
+    
+    res = [[]]
+    threats = calculate_threats(grid, turn, w_castlable_state, b_castlable_state, en_passant_pawn, state)
+    if turn == 0:
+        if w_castlable_state != 1:
+            #check if squares are empty
+            if grid[7][0][0] == 3 and grid[7][1] == [-1, -1] and grid[7][2] == [-1, -1] and grid[7][3] == [-1, -1] and highlighted == [4, 7]:
+                #check if the right squares are not threatened
+                if [7, 1] not in threats and [7, 2] not in threats:
+                    res.append([7,2])
+                 
+        if w_castlable_state != 2:
+            if grid[7][7][0] == 3 and grid[7][6] == [-1, -1] and grid[7][5] == [-1, -1] and highlighted == [4, 7]:
+                if [7, 5] not in threats and [7, 6] not in threats:
+                    res.append([7,6])
+    
+    
+    if turn == 1:
+        if b_castlable_state != 1:
+            if grid[0][0][0] == 3 and grid[0][1] == [-1, -1] and grid[0][2] == [-1, -1] and grid[0][3] == [-1, -1] and highlighted == [4, 0]:
+                if [0, 1] not in threats and [0, 2] not in threats:
+                    res.append([0,2])
+                 
+        if b_castlable_state != 2:
+            if grid[0][7][0] == 3 and grid[0][6] == [-1, -1] and grid[0][5] == [-1, -1] and highlighted == [4, 0]:
+                if [0, 6] not in threats and [0, 5] not in threats:
+                    res.append([0,6])
+    return res
