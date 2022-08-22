@@ -216,6 +216,9 @@ def game_loop(window, run, clock, turn, highlighted, possible_moves,
                                     elif [t[0], t[1]] == [en_passant_pawn[0] - 1, en_passant_pawn[1]]:
                                         grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                         grid[en_passant_pawn[0]][en_passant_pawn[1]] = [-1, -1]
+                                    
+                                    else:
+                                        grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                 else:
                                     if(abs(t[0] - highlighted[1])) == 2:
                                         en_passant_pawn = [t[0], t[1]]
