@@ -123,21 +123,16 @@ def analyze_state(grid, turn, w_castlable_state, b_castlable_state, en_passant_p
     kingx, kingy = find_king(grid, turn)
     th = calculate_threats(grid, turn, w_castlable_state, b_castlable_state, en_passant_pawn, state)
     pos = possible_king(kingx, kingy, grid, True, w_castlable_state, b_castlable_state, en_passant_pawn, state)
-    
+    is_mate(grid, (turn), en_passant_pawn, w_castlable_state, b_castlable_state, state)
     if len(pos) == 1:
         print("Checkmate !")
         pygame.mixer.Sound.play(end_game_sound)
         return 2
         
-    elif len(pos) == 2 and pos[1] == [kingy, kingx]:
-        if turn == 1 and [kingy, kingx] != black_king_pos:
-            print("Mate !")
-            pygame.mixer.Sound.play(end_game_sound)
-            return 1
-        if turn == 0 and [kingy, kingx] != white_king_pos:
-            print("Mate !")
-            pygame.mixer.Sound.play(end_game_sound)
-            return 1
+    elif len(pos) == 2 and pos[1] == [kingy, kingx] and is_mate(grid, (turn), en_passant_pawn, w_castlable_state, b_castlable_state, state):
+        print("Mate !")
+        pygame.mixer.Sound.play(end_game_sound)
+        return 1
     elif [kingy, kingx] in th:
         print("Check !")
         return 0
