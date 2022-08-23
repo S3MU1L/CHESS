@@ -335,3 +335,23 @@ def check_castling(grid, highlighted, w_castlable_state, b_castlable_state, stat
                 if [0, 6] not in threats and [0, 5] not in threats:
                     res.append([0,6])
     return res
+
+def is_mate(grid, turn, en_passant_pawn, w_castlable_state, b_castlable_state, state):
+    all = [[]]
+    for y in range(8):
+        for x in range(8):
+            if grid[y][x][1] == turn:
+                if grid[y][x]!=5:
+                    if grid[y][x][0] == 0:
+                        all += possible_pawn(x, y, grid, True, en_passant_pawn)
+                    else:
+                        all += calculate_possible([x, y], grid, w_castlable_state, b_castlable_state, en_passant_pawn, state)
+    x, y = find_king(grid, turn)
+    valid = check_valid_moves([x, y], all, turn, grid, w_castlable_state, b_castlable_state, en_passant_pawn, state)
+    good = 0
+    for a in valid:
+        if a != []:
+            good += 1
+        if good >= 2:
+            return False
+    return True
