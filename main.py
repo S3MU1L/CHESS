@@ -3,7 +3,6 @@ import pygame
 from constants import *
 from possible import *
 import menu
-# from option_window import OptionWindow
 pygame.init()
 
 def initialize():
@@ -77,14 +76,20 @@ def draw_grid(win, grid):
 def draw_winning(win, turn):
     winner = "White" if turn == 0 else "Black"
     text = "The " + winner + " has won!"
-    text_surface = menu_font.render(text, 1, FONT_COLOR)
+    text2 = "Press R to play again!"
+    text_surface = game_font.render(text, 1, FONT_COLOR)
+    text_surface2 = game_font.render(text2, 1, FONT_COLOR)
     win.blit(text_surface, (WIDTH//2 - text_surface.get_width()//2, HEIGHT//2 - text_surface.get_height()//2))
+    win.blit(text_surface2, (WIDTH//2 - text_surface2.get_width()//2, HEIGHT//2 + 40))
 
 def draw_mate(win):
-    text = "Stalemate! It's a draw!"
-    text_surface = menu_font.render(text, 1, FONT_COLOR)
+    text = "Stalemate, it's a draw!"
+    text2 = "Press R to play again!"
+    text_surface = game_font.render(text, 1, FONT_COLOR)
+    text_surface2 = game_font.render(text2, 1, FONT_COLOR)
     win.blit(text_surface, (WIDTH//2 - text_surface.get_width()//2, WIDTH//2 - text_surface.get_height()//2))
-
+    win.blit(text_surface2, (WIDTH//2 - text_surface2.get_width()//2, HEIGHT // 2 + 40))
+    
 def draw_possible(win, possible_moves, grid, turn):
     for pos in possible_moves:
         if pos != []:
@@ -121,14 +126,17 @@ def analyze_state(grid, turn, w_castlable_state, b_castlable_state, en_passant_p
     
     if len(pos) == 1:
         print("Checkmate !")
+        pygame.mixer.Sound.play(end_game_sound)
         return 2
         
     elif len(pos) == 2 and pos[1] == [kingy, kingx]:
         if turn == 1 and [kingy, kingx] != black_king_pos:
             print("Mate !")
+            pygame.mixer.Sound.play(end_game_sound)
             return 1
         if turn == 0 and [kingy, kingx] != white_king_pos:
             print("Mate !")
+            pygame.mixer.Sound.play(end_game_sound)
             return 1
     elif [kingy, kingx] in th:
         print("Check !")
@@ -139,10 +147,10 @@ def analyze_state(grid, turn, w_castlable_state, b_castlable_state, en_passant_p
 def draw_transformation(win):
     text = "Click on pawn to change the piece"
     text2 = "Press enter to play"
-    text_surface = menu_font.render(text, 1, FONT_COLOR)
-    text_surface2 = menu_font.render(text2, 1, FONT_COLOR)
-    win.blit(text_surface, (WIDTH//2 - text_surface.get_width()//2, 100))
-    win.blit(text_surface2, (WIDTH//2 - text_surface2.get_width()//2, 200))
+    text_surface = game_font.render(text, 1, FONT_COLOR)
+    text_surface2 = game_font.render(text2, 1, FONT_COLOR)
+    win.blit(text_surface, (WIDTH//2 - text_surface.get_width()//2, 200))
+    win.blit(text_surface2, (WIDTH//2 - text_surface2.get_width()//2, 230))
 
 
 def draw(win, grid, highlighted, possible_moves, turn, state, transformation):
@@ -166,13 +174,13 @@ def game_loop(window, run, clock, turn, highlighted, possible_moves,
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+                pygame.quit()
                 break
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     run = False
-                    pygame.quit()
                     initialize()
-                    break
+                    pygame.quit()
                 if event.key == pygame.K_RETURN and transformation:
                     transformation = False
                     trans_piece = [-1, -1]
@@ -237,21 +245,26 @@ def game_loop(window, run, clock, turn, highlighted, possible_moves,
                                     if [t[0], t[1]] == [en_passant_pawn[0] + 1, en_passant_pawn[1]]:
                                         grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                         grid[en_passant_pawn[0]][en_passant_pawn[1]] = [-1, -1]
+                                        en_passant_pawn = [-1,-1]
                                         
                                     elif [t[0], t[1]] == [en_passant_pawn[0] - 1, en_passant_pawn[1]]:
                                         grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                         grid[en_passant_pawn[0]][en_passant_pawn[1]] = [-1, -1]
+                                        en_passant_pawn = [-1,-1]
                                     
                                     else:
                                         grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                                 else:
+                                    en_passant_pawn = [-1,-1]
                                     if(abs(t[0] - highlighted[1])) == 2:
                                         en_passant_pawn = [t[0], t[1]]
                                     grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
                             else:
+                                en_passant_pawn = [-1,-1]
                                 if(abs(t[0] - highlighted[1])) == 2:
                                     en_passant_pawn = [t[0], t[1]]
                                 grid[highlighted[1]][highlighted[0]], grid[t[0]][t[1]] = [-1,-1], grid[highlighted[1]][highlighted[0]]
+                                
 
                         else:
                             #if we can't castle we will just move kings like other pieces
@@ -300,25 +313,19 @@ def game_loop(window, run, clock, turn, highlighted, possible_moves,
                                     turn -= 1
 
                         #if there are then we need to ask the player what piece does he want to change the pawn into
+                        pygame.mixer.Sound.play(move_piece_sound)
                         turn = (turn + 1) % 2
                         highlighted = [-1, -1]
                         possible_moves = []
                         safe_moves = []
                         state = analyze_state(grid, turn,  w_castlable_state, b_castlable_state, en_passant_pawn, state)
             if event.type == pygame.MOUSEBUTTONDOWN and state < 1 and transformation:
-                print("yes")
-                print(turn)
                 t = check_click(turn, pygame.mouse.get_pos(), grid)
-                print(t)
                 if t != [-1,-1]:
-                    print("ofc")
                     if [t[1], t[0]] == [trans_pawn[0], trans_pawn[1]]:
                         click += 1
                         new_piece = pieces[click%4]
                         grid[trans_pawn[0]][trans_pawn[1]] = [new_piece, turn]
-
-
-                
 
         draw(window, grid, highlighted, safe_moves, turn, state, transformation)
         clock.tick(FPS)
